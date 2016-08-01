@@ -77,7 +77,7 @@ backend keystone_api_back
   option httpchk
   http-request add-header X-Forwarded-Proto https
 {% for backend in keystone_pub_backend_servers %}
-  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
+  server {{ backend.name }} {{ backend.address }} check
 {% endfor %}
 
 frontend keystone_api_admin
@@ -90,5 +90,5 @@ backend keystone_api_admin_back
   option httpchk
   http-request add-header X-Forwarded-Proto https
 {% for backend in keystone_adm_backend_servers %}
-  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
+  server {{ backend.name }} {{ backend.address }} check
 {% endfor %}
