@@ -1,4 +1,5 @@
 ---
+# For Debian/Ubuntu
 - name: Ensure HAProxy is installed (Debian).
   apt: name=haproxy state=installed
   when: ansible_os_family == 'Debian'
@@ -11,10 +12,12 @@
     state: present
   when: ansible_os_family == 'Debian'
 
+# For Redhat/Centos
 - name: Ensure HAProxy is installed (RedHat).
   yum: name=haproxy state=installed
   when: ansible_os_family == 'RedHat'
 
+# Common tasks
 - name: Get HAProxy version.
   command: haproxy -v
   register: haproxy_version_result
