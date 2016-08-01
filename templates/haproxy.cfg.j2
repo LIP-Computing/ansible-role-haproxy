@@ -10,20 +10,26 @@ global
   user {{ haproxy_user }}
   group {{ haproxy_group }}
   daemon
+  crt-base {{ host_cert }}
+  ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
 
 defaults
   log global
   mode  http
   option  httplog
   option  dontlognull
+  option  redispatch
+  option  forwardfor
+  option  http-server-close
+  option  tcpka
 {% if haproxy_version == '1.4' %}
-        contimeout 5000
-        clitimeout 50000
-        srvtimeout 50000
+  contimeout 5000
+  clitimeout 50000
+  srvtimeout 50000
 {% else %}
-        timeout connect 5000
-        timeout client 50000
-        timeout server 50000
+  timeout connect 5000
+  timeout client 50000
+  timeout server 50000
 {% endif %}
 {% if ansible_os_family == 'Debian' %}
   errorfile 400 /etc/haproxy/errors/400.http
@@ -35,19 +41,54 @@ defaults
   errorfile 504 /etc/haproxy/errors/504.http
 {% endif %}
 
+#############################################################################
+# Openstack Dashboard - http(s)
+#############################################################################
 frontend {{ haproxy_frontend_name }}
-    bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }}
-    mode {{ haproxy_frontend_mode }}
-    default_backend {{ haproxy_backend_name }}
+  bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }} ssl crt {{ host_cert }}
+  mode {{ haproxy_frontend_mode }}
+  reqadd X-Forwarded-Proto:\ https
+  default_backend {{ haproxy_backend_name }}
 
 backend {{ haproxy_backend_name }}
-    mode {{ haproxy_backend_mode }}
-    balance {{ haproxy_backend_balance_method }}
-    option forwardfor
+  mode {{ haproxy_backend_mode }}
+  balance {{ haproxy_backend_balance_method }}
+  option forwardfor
 {% if haproxy_backend_httpchk != '' %}
-    option httpchk {{ haproxy_backend_httpchk }}
+  option httpchk {{ haproxy_backend_httpchk }}
 {% endif %}
-    cookie SERVERID insert indirect
+  cookie SERVERID insert indirect nocache
+  rspidel ^Set-cookie:\ IP=
+  rsprep ^Location:\ http:(.*)   Location:\ https:\1
 {% for backend in haproxy_backend_servers %}
-    server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
+  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
+{% endfor %}
+
+#############################################################################
+# Keystone
+#############################################################################
+frontend keystone_api
+  bind {{ haproxy_frontend_bind_address }}:{{ keystone_port_pub }} ssl crt {{ host_cert }}
+  reqadd X-Forwarded-Proto:\ https
+  default_backend keystone_api_back
+
+backend keystone_api_back
+  balance source
+  option httpchk
+  http-request add-header X-Forwarded-Proto https
+{% for backend in keystone_pub_backend_servers %}
+  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
+{% endfor %}
+
+frontend keystone_api_admin
+  bind {{ haproxy_frontend_bind_address }}:{{ keystone_port_adm }} ssl crt {{ host_cert }}
+  reqadd X-Forwarded-Proto:\ https
+  default_backend keystone_api_admin_back
+
+backend keystone_api_admin_back
+  balance source
+  option httpchk
+  http-request add-header X-Forwarded-Proto https
+{% for backend in keystone_adm_backend_servers %}
+  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
 {% endfor %}
