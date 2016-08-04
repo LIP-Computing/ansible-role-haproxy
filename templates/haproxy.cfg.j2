@@ -1,6 +1,5 @@
 global
-  log /dev/log  local0
-  log /dev/log  local1 notice
+  log         127.0.0.1 local2
 {% if haproxy_socket != '' %}
   stats socket {{ haproxy_socket }} level admin
 {% endif %}
