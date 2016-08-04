@@ -47,9 +47,9 @@ frontend {{ haproxy_frontend_name }}
   bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }} ssl crt {{ host_cert }}
   mode {{ haproxy_frontend_mode }}
   reqadd X-Forwarded-Proto:\ https
-  default_backend {{ haproxy_backend_name }}
+  default_backend http_back
 
-backend {{ haproxy_backend_name }}
+backend http_back
   mode {{ haproxy_backend_mode }}
   balance {{ haproxy_backend_balance_method }}
   option forwardfor
