@@ -1,6 +1,8 @@
 global
   log         127.0.0.1 local2
   stats socket {{ haproxy_socket }} level admin
+  maxconn     4000
+  tune.ssl.cachesize 1000000
   chroot {{ haproxy_chroot }}
   user {{ haproxy_user }}
   group {{ haproxy_group }}
@@ -11,9 +13,12 @@ global
 
 defaults
   log	global
+  log-format {"type":"haproxy","timestamp":%Ts,"http_status":%ST,"http_request":"%r","remote_addr":"%ci","bytes_read":%B,"upstream_addr":"%si","backend_name":"%b","retries":%rc,"bytes_uploaded":%U,"upstream_response_time":"%Tr","upstream_connect_time":"%Tc","session_duration":"%Tt","termination_state":"%ts"}
   mode	http
   option	httplog
   option	dontlognull
+  option forwardfor
+  option http-server-close
   timeout connect 5000
   timeout client  50000
   timeout server  50000
@@ -30,51 +35,82 @@ defaults
 #############################################################################
 # Openstack Dashboard - http(s)
 #############################################################################
-frontend {{ haproxy_frontend_name }}
-  bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }} ssl crt {{ host_cert }}
-  mode {{ haproxy_frontend_mode }}
-  reqadd X-Forwarded-Proto:\ https
-  default_backend http_back
+frontend http
+  bind {{ haproxy_frontend_bind_address }}:80
+  redirect scheme https if !{ ssl_fc }
+  default_backend dashboard
 
-backend http_back
-  mode {{ haproxy_backend_mode }}
-  balance {{ haproxy_backend_balance_method }}
-  option forwardfor
-{% if haproxy_backend_httpchk != '' %}
-  option httpchk {{ haproxy_backend_httpchk }}
-{% endif %}
+frontend https
+  bind {{ haproxy_frontend_bind_address }}:443 ssl crt {{ host_cert }}
+  reqadd X-Forwarded-Proto:\ https
+  default_backend dashboard
+
+backend dashboard
+  balance source
   cookie SERVERID insert indirect nocache
+  option  tcpka
+  option  httpchk
+  option  tcplog
   rspidel ^Set-cookie:\ IP=
-  rsprep ^Location:\ http:(.*)   Location:\ https:\1
-{% for backend in haproxy_backend_servers %}
-  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
-{% endfor %}
+  rsprep ^Location:\ http:(.*) Location:\ https:\1
+  server apache {{ controller_priv_ip }}:80 cookie apache check inter 2000 rise 2 fall 5
 
 #############################################################################
 # Keystone
 #############################################################################
 frontend keystone_api
-  bind {{ haproxy_frontend_bind_address }}:{{ keystone_port_pub }} ssl crt {{ host_cert }}
+  bind {{ haproxy_frontend_bind_address }}:5000 ssl crt /etc/haproxy/haproxy.pem
   reqadd X-Forwarded-Proto:\ https
+  redirect scheme https if !{ ssl_fc }
   default_backend keystone_api_back
 
 backend keystone_api_back
   balance source
-  option httpchk
-  http-request add-header X-Forwarded-Proto https
-{% for backend in keystone_pub_backend_servers %}
-  server {{ backend.name }} {{ backend.address }} check
-{% endfor %}
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server keystone {{ controller_priv_ip }}:5000 check inter 2000 rise 2 fall 5
 
 frontend keystone_api_admin
-  bind {{ haproxy_frontend_bind_address }}:{{ keystone_port_adm }} ssl crt {{ host_cert }}
+  bind {{ haproxy_frontend_bind_address }}:35357 ssl crt /etc/haproxy/haproxy.pem
   reqadd X-Forwarded-Proto:\ https
+  redirect scheme https if !{ ssl_fc }
   default_backend keystone_api_admin_back
 
 backend keystone_api_admin_back
   balance source
-  option httpchk
-  http-request add-header X-Forwarded-Proto https
-{% for backend in keystone_adm_backend_servers %}
-  server {{ backend.name }} {{ backend.address }} check
-{% endfor %}
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server keystone {{ controller_priv_ip }}:35357 check inter 2000 rise 2 fall 5
+
+#############################################################################
+# Glance: API
+#############################################################################
+frontend glance-api
+  option logasap
+  bind {{ haproxy_frontend_bind_address }}:9292 ssl crt /etc/haproxy/haproxy.pem
+  reqadd X-Forwarded-Proto:\ https
+  default_backend glance-api_back
+
+backend glance-api_back
+  balance source
+  server glance {{ controller_priv_ip }}:9292 check inter 2000 rise 2 fall 5
+
+#############################################################################
+# Cinder: API
+#############################################################################
+frontend cinder-api
+  option logasap
+  bind {{ haproxy_frontend_bind_address }}:8776 ssl crt /etc/haproxy/haproxy.pem
+  reqadd X-Forwarded-Proto:\ https
+  redirect scheme https if !{ ssl_fc }
+  default_backend cinder-api_back
+
+backend cinder-api_back
+  balance source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server cinder {{ controller_priv_ip }}:8776 check inter 2000 rise 2 fall 5
+
