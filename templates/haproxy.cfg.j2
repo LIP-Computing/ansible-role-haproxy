@@ -2,7 +2,6 @@ global
   log         127.0.0.1 local2
   maxconn     4000
   tune.ssl.cachesize 1000000
-  chroot {{ haproxy_chroot }}
   user {{ haproxy_user }}
   group {{ haproxy_group }}
   daemon
