@@ -57,7 +57,7 @@ backend dashboard
 # Keystone
 #############################################################################
 frontend keystone_api
-  bind {{ haproxy_frontend_bind_address }}:5000 ssl crt /etc/haproxy/haproxy.pem
+  bind {{ haproxy_frontend_bind_address }}:5000 ssl crt {{ host_cert }}
   reqadd X-Forwarded-Proto:\ https
   redirect scheme https if !{ ssl_fc }
   default_backend keystone_api_back
@@ -70,7 +70,7 @@ backend keystone_api_back
   server keystone {{ controller_priv_ip }}:5000 check inter 2000 rise 2 fall 5
 
 frontend keystone_api_admin
-  bind {{ haproxy_frontend_bind_address }}:35357 ssl crt /etc/haproxy/haproxy.pem
+  bind {{ haproxy_frontend_bind_address }}:35357 ssl crt {{ host_cert }}
   reqadd X-Forwarded-Proto:\ https
   redirect scheme https if !{ ssl_fc }
   default_backend keystone_api_admin_back
@@ -87,7 +87,7 @@ backend keystone_api_admin_back
 #############################################################################
 frontend glance-api
   option logasap
-  bind {{ haproxy_frontend_bind_address }}:9292 ssl crt /etc/haproxy/haproxy.pem
+  bind {{ haproxy_frontend_bind_address }}:9292 ssl crt {{ host_cert }}
   reqadd X-Forwarded-Proto:\ https
   default_backend glance-api_back
 
@@ -100,7 +100,7 @@ backend glance-api_back
 #############################################################################
 frontend cinder-api
   option logasap
-  bind {{ haproxy_frontend_bind_address }}:8776 ssl crt /etc/haproxy/haproxy.pem
+  bind {{ haproxy_frontend_bind_address }}:8776 ssl crt {{ host_cert }}
   reqadd X-Forwarded-Proto:\ https
   redirect scheme https if !{ ssl_fc }
   default_backend cinder-api_back
