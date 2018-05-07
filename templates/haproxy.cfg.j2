@@ -1,11 +1,7 @@
 global
   log         127.0.0.1 local2
-{% if haproxy_socket != '' %}
   stats socket {{ haproxy_socket }} level admin
-{% endif %}
-{% if haproxy_chroot != '' %}
   chroot {{ haproxy_chroot }}
-{% endif %}
   user {{ haproxy_user }}
   group {{ haproxy_group }}
   daemon
@@ -14,23 +10,13 @@ global
   tune.ssl.default-dh-param 2048
 
 defaults
-  log global
-  mode  http
-  option  httplog
-  option  dontlognull
-  option  redispatch
-  option  forwardfor
-  option  http-server-close
-  option  tcpka
-{% if haproxy_version == '1.4' %}
-  contimeout 5000
-  clitimeout 50000
-  srvtimeout 50000
-{% else %}
+  log	global
+  mode	http
+  option	httplog
+  option	dontlognull
   timeout connect 5000
-  timeout client 50000
-  timeout server 50000
-{% endif %}
+  timeout client  50000
+  timeout server  50000
 {% if ansible_os_family == 'Debian' %}
   errorfile 400 /etc/haproxy/errors/400.http
   errorfile 403 /etc/haproxy/errors/403.http
