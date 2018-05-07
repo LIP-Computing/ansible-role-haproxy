@@ -1,6 +1,5 @@
 global
   log         127.0.0.1 local2
-  stats socket {{ haproxy_socket }} level admin
   maxconn     4000
   tune.ssl.cachesize 1000000
   chroot {{ haproxy_chroot }}
