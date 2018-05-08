@@ -9,7 +9,6 @@ haproxy_frontend_bind_address: '*'
 haproxy_frontend_port: 443
 haproxy_frontend_mode: 'http'
 keystone_port_pub: 5000
-keystone_port_adm: 35357
 
 # Backend settings.
 haproxy_backend_name: 'habackend'

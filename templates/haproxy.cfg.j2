@@ -69,19 +69,6 @@ backend keystone_api_back
   option  tcplog
   server keystone {{ controller_priv_ip }}:5000 check inter 2000 rise 2 fall 5
 
-frontend keystone_api_admin
-  bind {{ haproxy_frontend_bind_address }}:35357 ssl crt {{ host_cert }}
-  reqadd X-Forwarded-Proto:\ https
-  redirect scheme https if !{ ssl_fc }
-  default_backend keystone_api_admin_back
-
-backend keystone_api_admin_back
-  balance source
-  option  tcpka
-  option  httpchk
-  option  tcplog
-  server keystone {{ controller_priv_ip }}:35357 check inter 2000 rise 2 fall 5
-
 #############################################################################
 # Glance: API
 #############################################################################
