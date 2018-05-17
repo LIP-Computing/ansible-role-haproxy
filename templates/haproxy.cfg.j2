@@ -1,5 +1,5 @@
 global
-  log         127.0.0.1 local2
+  log /dev/log local0 debug 
   maxconn     4000
   tune.ssl.cachesize 1000000
   user {{ haproxy_user }}
@@ -51,7 +51,7 @@ backend dashboard
   option  tcplog
   rspidel ^Set-cookie:\ IP=
   rsprep ^Location:\ http:(.*) Location:\ https:\1
-  server apache {{ controller_priv_ip }}:80 cookie apache check inter 2000 rise 2 fall 5
+  server keystone {{ controller_priv_ip }}:80 cookie apache check inter 2000 rise 2 fall 5
 
 #############################################################################
 # Keystone
