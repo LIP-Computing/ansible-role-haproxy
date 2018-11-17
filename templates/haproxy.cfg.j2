@@ -1,13 +1,18 @@
 global
-  log /dev/log local0 debug 
-  maxconn     4000
-  tune.ssl.cachesize 1000000
+  log /dev/log  local0
+  log /dev/log  local1 notice
+{% if haproxy_socket != '' %}
+  stats socket {{ haproxy_socket }} level admin
+{% endif %}
+{% if haproxy_chroot != '' %}
+  chroot {{ haproxy_chroot }}
+{% endif %}
   user {{ haproxy_user }}
   group {{ haproxy_group }}
   daemon
-  crt-base {{ host_cert }}
-  ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
-  tune.ssl.default-dh-param 2048
+{% for global_var in haproxy_global_vars %}
+  {{ global_var }}
+{% endfor %}
 
 defaults
   log global
@@ -54,7 +59,11 @@ backend dashboard
   option  tcplog
   rspidel ^Set-cookie:\ IP=
   rsprep ^Location:\ http:(.*) Location:\ https:\1
-  server keystone {{ controller_priv_ip }}:80 cookie apache check inter 2000 rise 2 fall 5
+  # server keystone {{ controller_priv_ip }}:80 cookie apache check inter 2000 rise 2 fall 5
+
+{% for backend in haproxy_backend_servers %}
+  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% endfor %}
 
 #############################################################################
 # Keystone
