@@ -59,10 +59,8 @@ backend dashboard
   option  tcplog
   rspidel ^Set-cookie:\ IP=
   rsprep ^Location:\ http:(.*) Location:\ https:\1
-  # server keystone {{ controller_priv_ip }}:80 cookie apache check inter 2000 rise 2 fall 5
-
 {% for backend in haproxy_backend_servers %}
-  server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+  server {{ backend.name }} {{ backend.address }}:80 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
 {% endfor %}
 
 #############################################################################
@@ -79,7 +77,9 @@ backend keystone_api_back
   option  tcpka
   option  httpchk
   option  tcplog
-  server keystone {{ controller_priv_ip }}:5000 check inter 2000 rise 2 fall 5
+{% for backend in haproxy_backend_servers %}
+  server {{ backend.name }} {{ backend.address }}:5000 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% endfor %}
 
 #############################################################################
 # Glance: API
@@ -92,7 +92,9 @@ frontend glance-api
 
 backend glance-api_back
   balance source
-  server glance {{ controller_priv_ip }}:9292 check inter 2000 rise 2 fall 5
+{% for backend in haproxy_backend_servers %}
+  server {{ backend.name }} {{ backend.address }}:9292 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% endfor %}
 
 #############################################################################
 # Cinder: API
@@ -109,5 +111,7 @@ backend cinder-api_back
   option  tcpka
   option  httpchk
   option  tcplog
-  server cinder {{ controller_priv_ip }}:8776 check inter 2000 rise 2 fall 5
+{% for backend in haproxy_backend_servers %}
+  server {{ backend.name }} {{ backend.address }}:8776 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% endfor %}
 
