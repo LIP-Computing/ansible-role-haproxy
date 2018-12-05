@@ -59,8 +59,8 @@ backend dashboard
   option  tcplog
   rspidel ^Set-cookie:\ IP=
   rsprep ^Location:\ http:(.*) Location:\ https:\1
-{% for backend in haproxy_backend_servers %}
-  server {{ backend.name }} {{ backend.address }}:80 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% for hosts in haproxy_backend_servers %}
+  server {{ hostvars[hosts]['ansible_hostname'] }} {{ hostvars[hosts]['ansible_default_ipv4']['address'] }}:80 cookie {{ hostvars[hosts]['ansible_hostname'] }} check inter 2000 rise 2 fall 5
 {% endfor %}
 
 #############################################################################
@@ -77,8 +77,8 @@ backend keystone_api_back
   option  tcpka
   option  httpchk
   option  tcplog
-{% for backend in haproxy_backend_servers %}
-  server {{ backend.name }} {{ backend.address }}:5000 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% for hosts in haproxy_backend_servers %}
+  server {{ hostvars[hosts]['ansible_hostname'] }} {{ hostvars[hosts]['ansible_default_ipv4']['address'] }}:5000 cookie {{ hostvars[hosts]['ansible_hostname'] }} check inter 2000 rise 2 fall 5
 {% endfor %}
 
 #############################################################################
@@ -92,8 +92,8 @@ frontend glance-api
 
 backend glance-api_back
   balance source
-{% for backend in haproxy_backend_servers %}
-  server {{ backend.name }} {{ backend.address }}:9292 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% for hosts in haproxy_backend_servers %}
+  server {{ hostvars[hosts]['ansible_hostname'] }} {{ hostvars[hosts]['ansible_default_ipv4']['address'] }}:9292 cookie {{ hostvars[hosts]['ansible_hostname'] }} check inter 2000 rise 2 fall 5
 {% endfor %}
 
 #############################################################################
@@ -111,7 +111,7 @@ backend cinder-api_back
   option  tcpka
   option  httpchk
   option  tcplog
-{% for backend in haproxy_backend_servers %}
-  server {{ backend.name }} {{ backend.address }}:8776 cookie {{ backend.name }} check inter 2000 rise 2 fall 5
+{% for hosts in haproxy_backend_servers %}
+  server {{ hostvars[hosts]['ansible_hostname'] }} {{ hostvars[hosts]['ansible_default_ipv4']['address'] }}:8776 cookie {{ hostvars[hosts]['ansible_hostname'] }} check inter 2000 rise 2 fall 5
 {% endfor %}
 
