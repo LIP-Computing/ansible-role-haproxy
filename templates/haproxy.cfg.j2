@@ -64,6 +64,24 @@ backend dashboard
 {% endfor %}
 
 #############################################################################
+# MariaDB with Galera on port 3306
+#############################################################################
+frontend galera
+  bind {{ haproxy_frontend_bind_address }}:3306
+  mode tcp
+  option tcplog
+  default_backend galera_back
+
+backend galera_back
+  balance source
+  mode tcp
+  option tcplog
+  # option mysql-check user haproxy
+{% for hosts in haproxy_backend_servers %}
+  server {{ hostvars[hosts]['ansible_hostname'] }} {{ hostvars[hosts]['ansible_default_ipv4']['address'] }}:3306 check weight 1
+{% endfor %}
+
+#############################################################################
 # Keystone
 #############################################################################
 frontend keystone_api
